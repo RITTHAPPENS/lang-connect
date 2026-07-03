@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Urlaubsantrag</title>
+<style>
+  /* ====== EINSTELLUNGEN: Nur diese eine Farbe anpassen, um zu re-branden ====== */
+  :root{
+    --accent:#0e7490;          /* Firmen-/Akzentfarbe -> hier ändern */
+    --accent-soft:#e0f2f6;
+    --bg:#f5f6f8;
+    --surface:#ffffff;
+    --ink:#182430;
+    --muted:#64748b;
+    --line:#e4e8ee;
+    --danger:#c2410c;
+    --ok:#15803d;
+    --radius:14px;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    padding:32px 16px;
+  }
+  .wrap{max-width:640px;margin:0 auto}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+    box-shadow:0 1px 2px rgba(24,36,48,.04),0 12px 32px -12px rgba(24,36,48,.10);
+  }
+
+  .head{padding:28px 28px 22px;border-bottom:1px solid var(--line)}
+  .eyebrow{
+    font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--accent);margin:0 0 6px;
+  }
+  .head h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em}
+  .head p{margin:6px 0 0;color:var(--muted);font-size:14px}
+
+  form{padding:24px 28px 28px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .full{grid-column:1 / -1}
+
+  label{display:block;font-size:13px;font-weight:600;margin:0 0 6px}
+  label .opt{font-weight:400;color:var(--muted)}
+  .req{color:var(--accent)}
+
+  input,select,textarea{
+    width:100%;font:inherit;color:var(--ink);
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:11px 12px;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  textarea{resize:vertical;min-height:74px}
+  input:focus,select:focus,textarea:focus{
+    outline:none;border-color:var(--accent);
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent);
+  }
+  input[readonly]{background:#f8fafc;color:var(--muted);cursor:default}
+
+  /* Live-Zusammenfassung */
+  .summary{
+    grid-column:1 / -1;
+    display:flex;gap:14px;
+    background:var(--accent-soft);
+    border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line));
+    border-radius:12px;padding:14px 16px;
+    margin-top:2px;
+  }
+  .summary .box{flex:1}
+  .summary .k{font-size:12px;color:var(--muted);margin:0 0 2px}
+  .summary .v{font-size:20px;font-weight:700;margin:0}
+  .summary .v.warn{color:var(--danger)}
+  .hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+
+  .actions{margin-top:22px}
+  button{
+    width:100%;font:inherit;font-weight:600;font-size:15px;
+    color:#fff;background:var(--accent);
+    border:0;border-radius:11px;padding:13px 16px;cursor:pointer;
+    transition:filter .15s ease, transform .05s ease;
+  }
+  button:hover{filter:brightness(.94)}
+  button:active{transform:translateY(1px)}
+  button:disabled{opacity:.6;cursor:not-allowed}
+
+  .msg{border-radius:11px;padding:13px 15px;font-size:14px;margin-top:14px;display:none}
+  .msg.show{display:block}
+  .msg.err{background:#fef2f2;color:var(--danger);border:1px solid #fecaca}
+
+  /* Erfolgs-Ansicht */
+  .done{display:none;padding:40px 28px;text-align:center}
+  .done.show{display:block}
+  .done .ico{
+    width:56px;height:56px;border-radius:50%;
+    background:color-mix(in srgb,var(--ok) 14%,transparent);
+    color:var(--ok);display:grid;place-items:center;margin:0 auto 14px;
+  }
+  .done h2{margin:0 0 6px;font-size:20px}
+  .done p{margin:0;color:var(--muted);font-size:14px}
+  .done button{margin-top:22px;width:auto;padding:11px 22px;background:transparent;color:var(--accent);border:1px solid var(--line)}
+
+  .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:16px}
+
+  @media (max-width:560px){
+    body{padding:18px 12px}
+    .grid{grid-template-columns:1fr}
+    .head,form{padding-left:20px;padding-right:20px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+  /* Honeypot: komplett aus dem Sichtfeld, aber im DOM vorhanden */
+  .hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;overflow:hidden}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+
+    <div class="head">
+      <p class="eyebrow">Personal</p>
+      <h1>Urlaubsantrag</h1>
+      <p>Bitte alle Felder ausfüllen. Der Antrag geht direkt per E-Mail an die Geschäftsleitung.</p>
+    </div>
+
+    <!-- Formular -->
+    <form id="antrag" novalidate>
+      <div class="grid">
+
+        <!-- Honeypot gegen Spam-Bots: für Menschen unsichtbar, muss leer bleiben -->
+        <div class="hp" aria-hidden="true">
+          <label for="website">Website (bitte frei lassen)</label>
+          <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+        </div>
+
+        <div class="full">
+          <label for="name">Name des Mitarbeiters <span class="req">*</span></label>
+          <input type="text" id="name" name="name" autocomplete="name" required>
+        </div>
+
+        <div>
+          <label for="art">Art des Antrags</label>
+          <select id="art" name="art">
+            <option>Erholungsurlaub</option>
+            <option>Sonderurlaub</option>
+            <option>Unbezahlter Urlaub</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="resturlaub">Resturlaub aktuell <span class="req">*</span></label>
+          <input type="number" id="resturlaub" name="resturlaub" min="0" step="0.5" placeholder="z. B. 24" required>
+        </div>
+
+        <div>
+          <label for="von">Von <span class="req">*</span></label>
+          <input type="date" id="von" name="von" required>
+        </div>
+
+        <div>
+          <label for="bis">Bis <span class="req">*</span></label>
+          <input type="date" id="bis" name="bis" required>
+        </div>
+
+        <div class="full">
+          <label for="tage">Anzahl Urlaubstage (Werktage) <span class="req">*</span></label>
+          <input type="number" id="tage" name="tage" min="0" step="0.5" required>
+          <p class="hint">Automatisch aus dem Zeitraum berechnet (Mo–Fr). Feiertage bitte ggf. manuell abziehen.</p>
+        </div>
+
+        <div class="summary">
+          <div class="box">
+            <p class="k">Beantragte Tage</p>
+            <p class="v" id="sumTage">–</p>
+          </div>
+          <div class="box">
+            <p class="k">Resturlaub danach</p>
+            <p class="v" id="sumRest">–</p>
+          </div>
+        </div>
+
+        <div class="full">
+          <label for="bemerkung">Bemerkung <span class="opt">(optional)</span></label>
+          <textarea id="bemerkung" name="bemerkung" placeholder="z. B. Vertretung durch …"></textarea>
+        </div>
+
+        <div class="full">
+          <label for="antragsdatum">Datum der Antragstellung</label>
+          <input type="text" id="antragsdatum" name="antragsdatum" readonly>
+        </div>
+
+      </div>
+
+      <div class="actions">
+        <button type="submit" id="btn">Antrag absenden</button>
+      </div>
+      <div class="msg err" id="err"></div>
+    </form>
+
+    <!-- Erfolg -->
+    <div class="done" id="done">
+      <div class="ico">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+      <h2>Antrag gesendet</h2>
+      <p>Der Urlaubsantrag wurde per E-Mail übermittelt.</p>
+      <button type="button" id="again">Weiteren Antrag stellen</button>
+    </div>
+
+  </div>
+  <p class="foot">Angaben werden ausschließlich zur Bearbeitung des Urlaubsantrags verwendet.</p>
+</div>
+
+<script>
+  /* =====================================================================
+     KONFIGURATION
+     ---------------------------------------------------------------------
+     Der Versand läuft über die mail.php im selben Ordner (IONOS-Postfach).
+     Empfänger-Adresse wird dort oben eingetragen – hier nichts nötig.
+     ===================================================================== */
+  const ENDPOINT = "mail.php";
+
+  const $ = id => document.getElementById(id);
+  const fmtDate = d => d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});
+
+  // Antragsdatum automatisch setzen (heute)
+  $("antragsdatum").value = fmtDate(new Date());
+
+  // Werktage (Mo–Fr) zwischen zwei Daten zählen, inkl. Start- und Endtag
+  function werktage(von, bis){
+    const a = new Date(von), b = new Date(bis);
+    if(isNaN(a) || isNaN(b) || b < a) return null;
+    let count = 0;
+    for(let d = new Date(a); d <= b; d.setDate(d.getDate()+1)){
+      const wd = d.getDay();            // 0 = So, 6 = Sa
+      if(wd !== 0 && wd !== 6) count++;
+    }
+    return count;
+  }
+
+  let tageManuell = false;
+  $("tage").addEventListener("input", () => { tageManuell = true; updateSummary(); });
+
+  function recalcTage(){
+    const t = werktage($("von").value, $("bis").value);
+    // Bis-Feld darf nicht vor Von liegen
+    $("bis").min = $("von").value || "";
+    if(t !== null && !tageManuell) $("tage").value = t;
+    updateSummary();
+  }
+
+  function updateSummary(){
+    const tage = parseFloat($("tage").value);
+    const rest = parseFloat($("resturlaub").value);
+    $("sumTage").textContent = isNaN(tage) ? "–" : tage.toLocaleString("de-DE") + " Tage";
+
+    const el = $("sumRest");
+    if(isNaN(tage) || isNaN(rest)){ el.textContent = "–"; el.classList.remove("warn"); return; }
+    const danach = rest - tage;
+    el.textContent = danach.toLocaleString("de-DE") + " Tage";
+    el.classList.toggle("warn", danach < 0);
+  }
+
+  ["von","bis"].forEach(id => $(id).addEventListener("change", () => { tageManuell = false; recalcTage(); }));
+  $("resturlaub").addEventListener("input", updateSummary);
+
+  // Absenden
+  $("antrag").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const err = $("err"); err.classList.remove("show");
+
+    // Validierung
+    const pflicht = ["name","resturlaub","von","bis","tage"];
+    for(const id of pflicht){
+      if(!$(id).value.trim()){ $(id).focus(); return showErr("Bitte alle Pflichtfelder (*) ausfüllen."); }
+    }
+    if(new Date($("bis").value) < new Date($("von").value))
+      return showErr("Das End-Datum darf nicht vor dem Start-Datum liegen.");
+
+    const btn = $("btn"); btn.disabled = true; btn.textContent = "Wird gesendet…";
+
+    // Daten für die E-Mail aufbereiten
+    const daten = new URLSearchParams({
+      name: $("name").value,
+      art: $("art").value,
+      zeitraum: fmtDate(new Date($("von").value)) + " – " + fmtDate(new Date($("bis").value)),
+      tage: $("tage").value,
+      resturlaub: $("resturlaub").value,
+      rest_danach: (parseFloat($("resturlaub").value) - parseFloat($("tage").value)).toString(),
+      bemerkung: $("bemerkung").value,
+      antragsdatum: $("antragsdatum").value,
+      website: $("website").value      // Honeypot – muss leer sein
+    });
+
+    try{
+      const res = await fetch(ENDPOINT,{
+        method:"POST",
+        headers:{"Accept":"application/json"},
+        body: daten
+      });
+      const data = await res.json();
+      if(data.success){
+        $("antrag").style.display = "none";
+        $("done").classList.add("show");
+      } else {
+        showErr("Senden fehlgeschlagen. Bitte später erneut versuchen.");
+      }
+    }catch(_){
+      showErr("Verbindungsfehler. Bitte Internetverbindung prüfen und erneut senden.");
+    }finally{
+      btn.disabled = false; btn.textContent = "Antrag absenden";
+    }
+
+    function showErr(m){ err.textContent = m; err.classList.add("show"); }
+    return;
+  });
+
+  function showErr(m){ const err=$("err"); err.textContent=m; err.classList.add("show"); }
+
+  $("again").addEventListener("click", () => {
+    $("antrag").reset();
+    $("antragsdatum").value = fmtDate(new Date());
+    tageManuell = false; updateSummary();
+    $("done").classList.remove("show");
+    $("antrag").style.display = "block";
+  });
+</script>
+</body>
+</html>
