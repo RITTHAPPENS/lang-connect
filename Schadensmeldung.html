@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schadensmeldung</title>
+<style>
+  :root{
+    --accent:#0e7490;          /* Firmen-/Akzentfarbe -> hier ändern */
+    --accent-soft:#e0f2f6;
+    --bg:#f5f6f8;
+    --surface:#ffffff;
+    --ink:#182430;
+    --muted:#64748b;
+    --line:#e4e8ee;
+    --danger:#c2410c;
+    --ok:#15803d;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5;
+    -webkit-font-smoothing:antialiased;padding:32px 16px;
+  }
+  .wrap{max-width:640px;margin:0 auto}
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    overflow:hidden;box-shadow:0 1px 2px rgba(24,36,48,.04),0 12px 32px -12px rgba(24,36,48,.10);
+  }
+  .head{padding:28px 28px 22px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+  .head h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em}
+  .head p{margin:6px 0 0;color:var(--muted);font-size:14px}
+
+  form{padding:24px 28px 28px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .full{grid-column:1 / -1}
+
+  label{display:block;font-size:13px;font-weight:600;margin:0 0 6px}
+  label .opt{font-weight:400;color:var(--muted)}
+  .req{color:var(--accent)}
+
+  input,select,textarea{
+    width:100%;font:inherit;color:var(--ink);background:var(--surface);
+    border:1px solid var(--line);border-radius:10px;padding:11px 12px;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  textarea{resize:vertical;min-height:88px}
+  input:focus,select:focus,textarea:focus{
+    outline:none;border-color:var(--accent);
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent);
+  }
+  input[readonly]{background:#f8fafc;color:var(--muted)}
+  .hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+
+  /* Segmentierte Auswahl (Firma) */
+  .seg{display:flex;gap:8px}
+  .seg label{flex:1;margin:0}
+  .seg input{position:absolute;opacity:0;width:0;height:0}
+  .seg .pill{
+    display:block;text-align:center;padding:11px 12px;border:1px solid var(--line);
+    border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;transition:all .15s;
+  }
+  .seg input:checked + .pill{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+  .seg input:focus-visible + .pill{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+
+  /* Foto-Upload */
+  .drop{
+    border:1.5px dashed color-mix(in srgb,var(--accent) 40%,var(--line));
+    border-radius:12px;padding:20px;text-align:center;cursor:pointer;
+    background:#fbfdfe;transition:border-color .15s,background .15s;
+  }
+  .drop:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .drop input{display:none}
+  .drop .t{font-weight:600;font-size:14px}
+  .drop .s{font-size:12px;color:var(--muted);margin-top:2px}
+  .preview{margin-top:10px;display:none}
+  .preview.show{display:block}
+  .preview img{max-width:100%;max-height:280px;border-radius:10px;border:1px solid var(--line);display:block}
+  .preview .meta{font-size:12px;color:var(--muted);margin-top:8px;display:flex;justify-content:space-between;align-items:center}
+  .rm{color:var(--danger);cursor:pointer;font-weight:600;background:none;border:none;width:auto;padding:0;font-size:12px}
+
+  .actions{margin-top:22px}
+  button.submit{
+    width:100%;font:inherit;font-weight:600;font-size:15px;color:#fff;background:var(--accent);
+    border:0;border-radius:11px;padding:13px 16px;cursor:pointer;transition:filter .15s,transform .05s;
+  }
+  button.submit:hover{filter:brightness(.94)}
+  button.submit:active{transform:translateY(1px)}
+  button.submit:disabled{opacity:.6;cursor:not-allowed}
+
+  .msg{border-radius:11px;padding:13px 15px;font-size:14px;margin-top:14px;display:none}
+  .msg.show{display:block}
+  .msg.err{background:#fef2f2;color:var(--danger);border:1px solid #fecaca}
+
+  .done{display:none;padding:40px 28px;text-align:center}
+  .done.show{display:block}
+  .done .ico{width:56px;height:56px;border-radius:50%;background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok);display:grid;place-items:center;margin:0 auto 14px}
+  .done h2{margin:0 0 6px;font-size:20px}
+  .done p{margin:0;color:var(--muted);font-size:14px}
+  .done button{margin-top:22px;width:auto;padding:11px 22px;background:transparent;color:var(--accent);border:1px solid var(--line);border-radius:11px;font:inherit;font-weight:600;cursor:pointer}
+
+  .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:16px}
+  @media (max-width:560px){
+    body{padding:18px 12px}
+    .grid{grid-template-columns:1fr}
+    .head,form{padding-left:20px;padding-right:20px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  .hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;overflow:hidden}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+
+    <div class="head">
+      <p class="eyebrow">Baustelle</p>
+      <h1>Schadensmeldung</h1>
+      <p>Schaden dokumentieren – geht direkt per E-Mail an die Betriebsleitung.</p>
+    </div>
+
+    <form id="form" novalidate>
+      <div class="grid">
+
+        <div class="hp" aria-hidden="true">
+          <label for="website">Website (bitte frei lassen)</label>
+          <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+        </div>
+
+        <div>
+          <label for="datum">Datum <span class="req">*</span></label>
+          <input type="date" id="datum" name="datum" required>
+        </div>
+
+        <div>
+          <label for="ort">Baustelle / Ort <span class="req">*</span></label>
+          <input type="text" id="ort" name="ort" placeholder="z. B. Musterstr. 12, Bamberg" required>
+        </div>
+
+        <div class="full">
+          <label>Firma <span class="req">*</span></label>
+          <div class="seg">
+            <label>
+              <input type="radio" name="firma" value="MFB" required>
+              <span class="pill">MFB</span>
+            </label>
+            <label>
+              <input type="radio" name="firma" value="NWT">
+              <span class="pill">NWT</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="full">
+          <label for="techniker">Techniker – Vorname & Nachname <span class="req">*</span></label>
+          <input type="text" id="techniker" name="techniker" autocomplete="name" required>
+        </div>
+
+        <div class="full">
+          <label for="erklaerung">Kurze Erklärung <span class="req">*</span></label>
+          <textarea id="erklaerung" name="erklaerung" placeholder="Was ist passiert? Was ist betroffen?" required></textarea>
+        </div>
+
+        <div class="full">
+          <label>Foto <span class="req">*</span></label>
+          <label class="drop" for="bild" id="drop">
+            <div class="t">Foto aufnehmen oder auswählen</div>
+            <div class="s">Wird automatisch verkleinert. JPG, PNG.</div>
+            <input type="file" id="bild" name="bild" accept="image/*">
+          </label>
+          <div class="preview" id="preview">
+            <img id="previewImg" alt="Vorschau">
+            <div class="meta">
+              <span id="previewMeta"></span>
+              <button type="button" class="rm" id="removeBild">Entfernen</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="submit" id="btn">Schaden melden</button>
+      </div>
+      <div class="msg err" id="err"></div>
+    </form>
+
+    <div class="done" id="done">
+      <div class="ico">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+      <h2>Schaden gemeldet</h2>
+      <p>Die Meldung wurde inkl. Foto per E-Mail übermittelt.</p>
+      <button type="button" id="again">Weitere Meldung</button>
+    </div>
+
+  </div>
+  <p class="foot">Angaben werden ausschließlich zur Bearbeitung der Schadensmeldung verwendet.</p>
+</div>
+
+<script>
+  const ENDPOINT = "mail.php";              // liegt im selben Ordner
+  const $ = id => document.getElementById(id);
+  const fmtDate = d => d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});
+
+  // Datum auf heute vorbelegen
+  $("datum").valueAsDate = new Date();
+
+  let bildBlob = null;
+
+  // Bild im Browser verkleinern (max. 1600 px, JPEG q0.8)
+  function verkleinern(file, maxDim, quality){
+    return new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width, h = img.height;
+          if(w > maxDim || h > maxDim){
+            if(w >= h){ h = Math.round(h * maxDim / w); w = maxDim; }
+            else { w = Math.round(w * maxDim / h); h = maxDim; }
+          }
+          const c = document.createElement("canvas");
+          c.width = w; c.height = h;
+          c.getContext("2d").drawImage(img, 0, 0, w, h);
+          c.toBlob(b => b ? resolve(b) : reject(), "image/jpeg", quality);
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  $("bild").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    try{
+      bildBlob = await verkleinern(file, 1600, 0.8);
+    }catch(_){
+      bildBlob = file; // Fallback: Original nehmen (z. B. wenn Format nicht darstellbar)
+    }
+    $("previewImg").src = URL.createObjectURL(bildBlob);
+    $("previewMeta").textContent = "Foto bereit · " + (bildBlob.size/1024/1024).toFixed(1) + " MB";
+    $("preview").classList.add("show");
+    $("drop").style.display = "none";
+  });
+
+  $("removeBild").addEventListener("click", () => {
+    bildBlob = null; $("bild").value = "";
+    $("preview").classList.remove("show");
+    $("drop").style.display = "block";
+  });
+
+  $("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    $("err").classList.remove("show");
+
+    for(const id of ["ort","techniker","erklaerung"]){
+      if(!$(id).value.trim()){ $(id).focus(); return showErr("Bitte alle Pflichtfelder (*) ausfüllen."); }
+    }
+    if(!document.querySelector('input[name="firma"]:checked')) return showErr("Bitte die Firma auswählen (MFB oder NWT).");
+    if(!bildBlob) return showErr("Bitte ein Foto aufnehmen oder auswählen.");
+
+    const btn = $("btn"); btn.disabled = true; btn.textContent = "Wird gesendet…";
+
+    const fd = new FormData();
+    fd.append("datum", fmtDate(new Date($("datum").value)));
+    fd.append("ort", $("ort").value);
+    fd.append("firma", document.querySelector('input[name="firma"]:checked').value);
+    fd.append("techniker", $("techniker").value);
+    fd.append("erklaerung", $("erklaerung").value);
+    fd.append("website", $("website").value);   // Honeypot
+    fd.append("bild", bildBlob, "schaden.jpg");
+
+    try{
+      const res = await fetch(ENDPOINT, { method:"POST", body: fd });
+      const data = await res.json();
+      if(data.success){
+        $("form").style.display = "none";
+        $("done").classList.add("show");
+      } else {
+        showErr(data.message || "Senden fehlgeschlagen. Bitte später erneut versuchen.");
+      }
+    }catch(_){
+      showErr("Verbindungsfehler. Bitte Internetverbindung prüfen und erneut senden.");
+    }finally{
+      btn.disabled = false; btn.textContent = "Schaden melden";
+    }
+  });
+
+  function showErr(m){ const el=$("err"); el.textContent=m; el.classList.add("show"); }
+
+  $("again").addEventListener("click", () => {
+    $("form").reset();
+    $("datum").valueAsDate = new Date();
+    bildBlob = null;
+    $("preview").classList.remove("show");
+    $("drop").style.display = "block";
+    $("done").classList.remove("show");
+    $("form").style.display = "block";
+  });
+</script>
+</body>
+</html>
