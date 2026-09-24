@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Fahrzeugprotokoll</title>
+<style>
+  :root{
+    --accent:#0e7490; --accent-soft:#e0f2f6; --bg:#f5f6f8; --surface:#ffffff;
+    --ink:#182430; --muted:#64748b; --line:#e4e8ee; --danger:#c2410c; --ok:#15803d; --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;padding:32px 16px}
+  .wrap{max-width:640px;margin:0 auto}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+    box-shadow:0 1px 2px rgba(24,36,48,.04),0 12px 32px -12px rgba(24,36,48,.10)}
+  .head{padding:28px 28px 22px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+  .head h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em}
+  .head p{margin:6px 0 0;color:var(--muted);font-size:14px}
+
+  form{padding:24px 28px 28px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .full{grid-column:1 / -1}
+  .sec{grid-column:1/-1;margin-top:8px;padding-top:18px;border-top:1px solid var(--line)}
+  .sec:first-child{margin-top:0;padding-top:0;border-top:0}
+  .sec h3{margin:0 0 2px;font-size:14px;font-weight:700}
+  .sec p{margin:0;font-size:12px;color:var(--muted)}
+
+  label{display:block;font-size:13px;font-weight:600;margin:0 0 6px}
+  label .opt{font-weight:400;color:var(--muted)}
+  .req{color:var(--accent)}
+  input,select,textarea{width:100%;font:inherit;font-size:16px;line-height:1.4;color:var(--ink);background:var(--surface);
+    border:1px solid var(--line);border-radius:10px;padding:12px;min-height:48px;transition:border-color .15s,box-shadow .15s}
+  select{-webkit-appearance:none;appearance:none;padding-right:38px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center}
+  input[type=number]{-moz-appearance:textfield}
+  input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  textarea{resize:vertical;min-height:88px;line-height:1.5}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+  .hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+
+  .seg{display:flex;gap:8px}
+  .seg label{flex:1;margin:0}
+  .seg input{position:absolute;opacity:0;width:0;height:0}
+  .seg .pill{display:block;text-align:center;padding:12px;border:1px solid var(--line);
+    border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;transition:all .15s}
+  .seg input:checked + .pill{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+
+  .drop{border:1.5px dashed color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:12px;
+    padding:20px;text-align:center;cursor:pointer;background:#fbfdfe}
+  .drop:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .drop input{display:none}
+  .drop .t{font-weight:600;font-size:14px}
+  .drop .s{font-size:12px;color:var(--muted);margin-top:2px}
+  .thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+  .thumb{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb button{position:absolute;top:4px;right:4px;width:24px;height:24px;min-height:0;border:0;border-radius:50%;
+    background:rgba(0,0,0,.6);color:#fff;font-size:15px;line-height:1;cursor:pointer;padding:0}
+
+  /* Unterschrift */
+  .sigbox{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+  .sigbox canvas{display:block;width:100%;height:170px;touch-action:none;background:
+    repeating-linear-gradient(transparent,transparent 168px,var(--line) 169px)}
+  .sigbar{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--line);background:#fafbfc}
+  .sigbar span{font-size:12px;color:var(--muted)}
+  .sigbar button{background:none;border:0;color:var(--danger);font:inherit;font-weight:600;font-size:12px;cursor:pointer;padding:4px 6px;min-height:0;width:auto}
+
+  .submit{width:100%;font:inherit;font-weight:600;font-size:15px;color:#fff;background:var(--accent);
+    border:0;border-radius:11px;padding:14px 16px;cursor:pointer;margin-top:22px;transition:filter .15s}
+  .submit:hover{filter:brightness(.94)}
+  .submit:disabled{opacity:.6;cursor:not-allowed}
+
+  .msg{border-radius:11px;padding:13px 15px;font-size:14px;margin-top:14px;display:none}
+  .msg.show{display:block}
+  .msg.err{background:#fef2f2;color:var(--danger);border:1px solid #fecaca}
+
+  .done{display:none;padding:44px 28px;text-align:center}
+  .done.show{display:block}
+  .done .ico{width:56px;height:56px;border-radius:50%;background:color-mix(in srgb,var(--ok) 14%,transparent);
+    color:var(--ok);display:grid;place-items:center;margin:0 auto 14px}
+  .done h2{margin:0 0 6px;font-size:20px}
+  .done p{margin:0;color:var(--muted);font-size:14px}
+  .done button{margin-top:22px;width:auto;padding:11px 22px;background:transparent;color:var(--accent);
+    border:1px solid var(--line);border-radius:11px;font:inherit;font-weight:600;cursor:pointer}
+
+  .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:16px}
+  @media (max-width:560px){
+    body{padding:18px 12px}
+    .grid{grid-template-columns:1fr;gap:14px}
+    .head{padding:24px 20px 20px}
+    form{padding:20px 16px 30px}
+  }
+  .hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;overflow:hidden}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+
+    <div class="head">
+      <p class="eyebrow">Fuhrpark</p>
+      <h1>Fahrzeugprotokoll</h1>
+      <p>Übergabe und Rücknahme dokumentieren – erzeugt ein PDF-Protokoll mit Unterschriften.</p>
+    </div>
+
+    <form id="form" novalidate>
+      <div class="grid">
+
+        <div class="hp" aria-hidden="true"><input type="text" id="hp" tabindex="-1" autocomplete="off"></div>
+
+        <div class="sec"><h3>Vorgang</h3><p>Art, Datum und beteiligter Mitarbeiter</p></div>
+
+        <div class="full">
+          <label>Art des Vorgangs <span class="req">*</span></label>
+          <div class="seg">
+            <label><input type="radio" name="vorgang" value="Übergabe" checked><span class="pill">Übergabe</span></label>
+            <label><input type="radio" name="vorgang" value="Rücknahme"><span class="pill">Rücknahme</span></label>
+          </div>
+        </div>
+
+        <div>
+          <label for="datum">Datum <span class="req">*</span></label>
+          <input type="date" id="datum" required>
+        </div>
+        <div>
+          <label for="mitarbeiter">Mitarbeiter <span class="req">*</span></label>
+          <input type="text" id="mitarbeiter" autocomplete="name" placeholder="Vorname Nachname" required>
+        </div>
+
+        <div class="sec"><h3>Fahrzeug</h3><p>Kennzeichen, Modell und aktueller Stand</p></div>
+
+        <div>
+          <label for="kennzeichen">Nummernschild <span class="req">*</span></label>
+          <input type="text" id="kennzeichen" placeholder="z. B. BA-LC 123" required style="text-transform:uppercase">
+        </div>
+        <div>
+          <label for="modell">Modell <span class="req">*</span></label>
+          <input type="text" id="modell" placeholder="z. B. VW Caddy" required>
+        </div>
+        <div>
+          <label for="km">KM-Stand <span class="req">*</span></label>
+          <input type="number" id="km" min="0" step="1" placeholder="z. B. 84500" required>
+        </div>
+        <div>
+          <label for="tuev">TÜV bis <span class="req">*</span></label>
+          <input type="month" id="tuev" required>
+        </div>
+        <div>
+          <label for="reifen">Zustand Reifen <span class="req">*</span></label>
+          <select id="reifen" required>
+            <option value="">Bitte wählen…</option>
+            <option>Neuwertig</option>
+            <option>Gut</option>
+            <option>Ausreichend</option>
+            <option>Abgefahren / Wechsel nötig</option>
+          </select>
+        </div>
+        <div>
+          <label for="zustand">Zustand Fahrzeug <span class="req">*</span></label>
+          <select id="zustand" required>
+            <option value="">Bitte wählen…</option>
+            <option>Neu</option>
+            <option>Gebraucht</option>
+          </select>
+        </div>
+
+        <div class="sec"><h3>Schäden</h3><p>Vorhandene Schäden festhalten</p></div>
+
+        <div class="full">
+          <label>Vorhandene Schäden <span class="req">*</span></label>
+          <div class="seg">
+            <label><input type="radio" name="schaeden" value="Nein" checked><span class="pill">Nein</span></label>
+            <label><input type="radio" name="schaeden" value="Ja"><span class="pill">Ja</span></label>
+          </div>
+        </div>
+
+        <div class="full" id="schadenBox" style="display:none">
+          <label for="schadenText">Welche Schäden und wo? <span class="req">*</span></label>
+          <textarea id="schadenText" placeholder="z. B. Kratzer Stoßstange hinten links, Delle Beifahrertür"></textarea>
+        </div>
+
+        <div class="sec"><h3>Fotos</h3><p>Fahrzeug von allen Seiten, Schäden im Detail</p></div>
+
+        <div class="full">
+          <label class="drop" for="bilder" id="drop">
+            <div class="t">Fotos aufnehmen oder auswählen</div>
+            <div class="s">Mehrere möglich. Werden automatisch verkleinert.</div>
+            <input type="file" id="bilder" accept="image/*" multiple>
+          </label>
+          <div class="thumbs" id="thumbs"></div>
+          <p class="hint" id="bilderInfo"></p>
+        </div>
+
+        <div class="sec"><h3>Unterschriften</h3><p>Mit dem Finger direkt auf dem Feld unterschreiben</p></div>
+
+        <div class="full">
+          <label for="name1">Übergeber (Firma) <span class="req">*</span></label>
+          <input type="text" id="name1" placeholder="Name in Druckbuchstaben" required style="margin-bottom:8px">
+          <div class="sigbox">
+            <canvas id="sig1"></canvas>
+            <div class="sigbar"><span>Unterschrift Übergeber</span><button type="button" onclick="clearSig(1)">Löschen</button></div>
+          </div>
+        </div>
+
+        <div class="full">
+          <label for="name2">Übernehmer (Mitarbeiter) <span class="req">*</span></label>
+          <input type="text" id="name2" placeholder="Name in Druckbuchstaben" required style="margin-bottom:8px">
+          <div class="sigbox">
+            <canvas id="sig2"></canvas>
+            <div class="sigbar"><span>Unterschrift Übernehmer</span><button type="button" onclick="clearSig(2)">Löschen</button></div>
+          </div>
+        </div>
+
+        <div class="sec"><h3>Versand</h3><p>Das Protokoll geht immer an die Betriebsleitung</p></div>
+
+        <div class="full">
+          <label for="cc">Kopie zusätzlich an <span class="opt">(optional)</span></label>
+          <input type="email" id="cc" placeholder="z. B. mitarbeiter@firma.de" autocomplete="email">
+          <p class="hint">Leer lassen, wenn nur die Betriebsleitung das Protokoll bekommen soll.</p>
+        </div>
+
+      </div>
+
+      <button type="submit" class="submit" id="btn">Protokoll erstellen & senden</button>
+      <div class="msg err" id="err"></div>
+    </form>
+
+    <div class="done" id="done">
+      <div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <h2>Protokoll gesendet</h2>
+      <p>Das PDF wurde inkl. Fotos und Unterschriften per E-Mail übermittelt.</p>
+      <button type="button" id="again">Neues Protokoll</button>
+    </div>
+
+  </div>
+  <p class="foot">Angaben werden ausschließlich zur Fahrzeugdokumentation verwendet.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  const $ = id => document.getElementById(id);
+  const fmtDate = d => d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});
+
+  $("datum").valueAsDate = new Date();
+
+  /* ---------- Schäden ein-/ausblenden ---------- */
+  document.querySelectorAll('input[name="schaeden"]').forEach(r =>
+    r.addEventListener("change", () => {
+      $("schadenBox").style.display = (r.value === "Ja" && r.checked) ? "block" : "none";
+    }));
+
+  /* ---------- Fotos ---------- */
+  let fotos = [];   // {blob, url}
+  function verkleinern(file,maxDim,q){
+    return new Promise((res,rej)=>{
+      const rd=new FileReader();
+      rd.onload=e=>{ const img=new Image();
+        img.onload=()=>{ let w=img.width,h=img.height;
+          if(w>maxDim||h>maxDim){ if(w>=h){h=Math.round(h*maxDim/w);w=maxDim;} else {w=Math.round(w*maxDim/h);h=maxDim;} }
+          const c=document.createElement("canvas"); c.width=w; c.height=h;
+          c.getContext("2d").drawImage(img,0,0,w,h);
+          c.toBlob(b=>b?res(b):rej(),"image/jpeg",q);
+        }; img.onerror=rej; img.src=e.target.result;
+      }; rd.onerror=rej; rd.readAsDataURL(file);
+    });
+  }
+  $("bilder").addEventListener("change", async e=>{
+    for(const file of e.target.files){
+      if(fotos.length >= 12){ break; }
+      let blob; try{ blob = await verkleinern(file,1400,0.75); }catch(_){ blob = file; }
+      fotos.push({blob, url:URL.createObjectURL(blob)});
+    }
+    e.target.value="";
+    renderThumbs();
+  });
+  function renderThumbs(){
+    $("thumbs").innerHTML = fotos.map((f,i)=>
+      `<div class="thumb"><img src="${f.url}" alt=""><button type="button" onclick="removeFoto(${i})">×</button></div>`).join("");
+    const mb = fotos.reduce((s,f)=>s+f.blob.size,0)/1024/1024;
+    $("bilderInfo").textContent = fotos.length ? `${fotos.length} Foto(s) · ${mb.toFixed(1)} MB` : "";
+  }
+  function removeFoto(i){ fotos.splice(i,1); renderThumbs(); }
+
+  /* ---------- Unterschriften ---------- */
+  const pads = {};
+  function initPad(n){
+    const c = $("sig"+n), ctx = c.getContext("2d");
+    function size(){
+      const r = c.getBoundingClientRect(), dpr = window.devicePixelRatio||1;
+      const data = c.width ? ctx.getImageData(0,0,c.width,c.height) : null;
+      c.width = r.width*dpr; c.height = r.height*dpr;
+      ctx.scale(dpr,dpr); ctx.lineWidth=2.2; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle="#182430";
+      if(data && pads[n] && pads[n].empty===false){ /* Inhalt bei Resize verwerfen */ }
+    }
+    size(); window.addEventListener("resize", size);
+    let drawing=false, empty=true;
+    const pos = e => { const r=c.getBoundingClientRect(); const p=e.touches?e.touches[0]:e; return {x:p.clientX-r.left,y:p.clientY-r.top}; };
+    const start = e => { e.preventDefault(); drawing=true; empty=false; pads[n].empty=false; const {x,y}=pos(e); ctx.beginPath(); ctx.moveTo(x,y); };
+    const move  = e => { if(!drawing) return; e.preventDefault(); const {x,y}=pos(e); ctx.lineTo(x,y); ctx.stroke(); };
+    const end   = () => { drawing=false; };
+    c.addEventListener("mousedown",start); c.addEventListener("mousemove",move);
+    window.addEventListener("mouseup",end);
+    c.addEventListener("touchstart",start,{passive:false}); c.addEventListener("touchmove",move,{passive:false});
+    c.addEventListener("touchend",end);
+    pads[n] = {canvas:c, ctx, empty:true, clear(){ ctx.clearRect(0,0,c.width,c.height); this.empty=true; }};
+  }
+  initPad(1); initPad(2);
+  function clearSig(n){ pads[n].clear(); }
+
+  /* ---------- PDF bauen ---------- */
+  async function buildPDF(d){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({unit:"mm", format:"a4"});
+    const M = 16; let y = M;
+
+    doc.setFont("helvetica","bold"); doc.setFontSize(17);
+    doc.text("Fahrzeugprotokoll – " + d.vorgang, M, y); y += 7;
+    doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(100);
+    doc.text("Erstellt am " + d.datum, M, y); y += 8;
+    doc.setTextColor(20); doc.setDrawColor(210); doc.line(M, y, 194, y); y += 8;
+
+    const rows = [
+      ["Art des Vorgangs", d.vorgang],
+      ["Datum", d.datum],
+      ["Mitarbeiter", d.mitarbeiter],
+      ["Nummernschild", d.kennzeichen],
+      ["Modell", d.modell],
+      ["KM-Stand", d.km + " km"],
+      ["TÜV bis", d.tuev],
+      ["Zustand Reifen", d.reifen],
+      ["Zustand Fahrzeug", d.zustand],
+      ["Vorhandene Schäden", d.schaeden]
+    ];
+    doc.setFontSize(11);
+    rows.forEach(([k,v])=>{
+      doc.setFont("helvetica","bold"); doc.text(k, M, y);
+      doc.setFont("helvetica","normal"); doc.text(String(v||"–"), M+58, y);
+      y += 7;
+    });
+
+    if(d.schaeden === "Ja" && d.schadenText){
+      y += 3; doc.setFont("helvetica","bold"); doc.text("Schadensbeschreibung", M, y); y += 6;
+      doc.setFont("helvetica","normal");
+      doc.splitTextToSize(d.schadenText, 178).forEach(line => { doc.text(line, M, y); y += 5.5; });
+    }
+
+    // Unterschriften
+    y += 6;
+    if(y > 215){ doc.addPage(); y = M; }
+    doc.setDrawColor(210); doc.line(M, y, 194, y); y += 8;
+    doc.setFont("helvetica","bold"); doc.setFontSize(11);
+    doc.text("Unterschriften", M, y); y += 4;
+
+    const sigW = 80, sigH = 26;
+    const put = (n, label, name, x) => {
+      const img = pads[n].canvas.toDataURL("image/png");
+      doc.addImage(img, "PNG", x, y, sigW, sigH);
+      doc.setDrawColor(150); doc.line(x, y+sigH, x+sigW, y+sigH);
+      doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(90);
+      doc.text(label, x, y+sigH+5);
+      doc.setTextColor(20); doc.setFontSize(10);
+      doc.text(name||"", x, y+sigH+10);
+    };
+    put(1, "Übergeber (Firma)", d.name1, M);
+    put(2, "Übernehmer (Mitarbeiter)", d.name2, M+98);
+    y += sigH + 18;
+
+    // Fotos
+    if(fotos.length){
+      doc.addPage(); let fy = M;
+      doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(20);
+      doc.text("Fotos zum Fahrzeug", M, fy); fy += 8;
+      const w = 86, h = 64, gap = 6;
+      let col = 0;
+      for(const f of fotos){
+        const dataUrl = await new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(f.blob); });
+        if(fy + h > 280){ doc.addPage(); fy = M; col = 0; }
+        doc.addImage(dataUrl, "JPEG", M + col*(w+gap), fy, w, h);
+        col++;
+        if(col === 2){ col = 0; fy += h + gap; }
+      }
+    }
+
+    return doc.output("datauristring").split(",")[1];   // base64
+  }
+
+  /* ---------- Absenden ---------- */
+  $("form").addEventListener("submit", async e=>{
+    e.preventDefault(); $("err").classList.remove("show");
+
+    for(const id of ["mitarbeiter","kennzeichen","modell","km","tuev","reifen","zustand","name1","name2"])
+      if(!$(id).value.trim()){ $(id).focus(); return showErr("Bitte alle Pflichtfelder (*) ausfüllen."); }
+
+    const schaeden = document.querySelector('input[name="schaeden"]:checked').value;
+    if(schaeden === "Ja" && !$("schadenText").value.trim()){ $("schadenText").focus(); return showErr("Bitte die Schäden beschreiben."); }
+    if(!fotos.length) return showErr("Bitte mindestens ein Foto vom Fahrzeug hinzufügen.");
+    if(pads[1].empty) return showErr("Bitte die Unterschrift des Übergebers erfassen.");
+    if(pads[2].empty) return showErr("Bitte die Unterschrift des Übernehmers erfassen.");
+
+    const btn = $("btn"); btn.disabled = true; btn.textContent = "Protokoll wird erstellt…";
+
+    const tuevRaw = $("tuev").value;   // YYYY-MM
+    const d = {
+      vorgang: document.querySelector('input[name="vorgang"]:checked').value,
+      datum: fmtDate(new Date($("datum").value)),
+      mitarbeiter: $("mitarbeiter").value,
+      kennzeichen: $("kennzeichen").value.toUpperCase(),
+      modell: $("modell").value,
+      km: Number($("km").value).toLocaleString("de-DE"),
+      tuev: tuevRaw ? tuevRaw.split("-")[1] + "/" + tuevRaw.split("-")[0] : "",
+      reifen: $("reifen").value,
+      zustand: $("zustand").value,
+      schaeden, schadenText: $("schadenText").value,
+      name1: $("name1").value, name2: $("name2").value
+    };
+
+    try{
+      const pdf = await buildPDF(d);
+      btn.textContent = "Wird gesendet…";
+      const fd = new FormData();
+      Object.entries(d).forEach(([k,v]) => fd.append(k, v));
+      fd.append("cc", $("cc").value);
+      fd.append("website", $("hp").value);
+      fd.append("pdf", pdf);
+      fd.append("dateiname", "Fahrzeugprotokoll_" + d.kennzeichen.replace(/[^A-Z0-9]/gi,"") + "_" + $("datum").value + ".pdf");
+
+      const r = await fetch("mail.php", {method:"POST", body: fd});
+      const data = await r.json();
+      if(data.success){ $("form").style.display="none"; $("done").classList.add("show"); }
+      else showErr(data.message || "Senden fehlgeschlagen. Bitte später erneut versuchen.");
+    }catch(err){
+      showErr("Fehler beim Erstellen des Protokolls. Bitte erneut versuchen.");
+    }finally{
+      btn.disabled=false; btn.textContent="Protokoll erstellen & senden";
+    }
+  });
+
+  function showErr(m){ const el=$("err"); el.textContent=m; el.classList.add("show"); window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"}); }
+
+  $("again").addEventListener("click", ()=>{
+    $("form").reset(); $("datum").valueAsDate=new Date();
+    fotos=[]; renderThumbs(); clearSig(1); clearSig(2);
+    $("schadenBox").style.display="none";
+    $("done").classList.remove("show"); $("form").style.display="block";
+    window.scrollTo(0,0);
+  });
+</script>
+</body>
+</html>
