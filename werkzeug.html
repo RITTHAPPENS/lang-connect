@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Werkzeugprotokoll</title>
+<style>
+  :root{
+    --accent:#0e7490; --accent-soft:#e0f2f6; --bg:#f5f6f8; --surface:#ffffff;
+    --ink:#182430; --muted:#64748b; --line:#e4e8ee; --danger:#c2410c; --ok:#15803d; --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;padding:32px 16px}
+  .wrap{max-width:660px;margin:0 auto}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+    box-shadow:0 1px 2px rgba(24,36,48,.04),0 12px 32px -12px rgba(24,36,48,.10)}
+  .head{padding:28px 28px 22px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+  .head h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em}
+  .head p{margin:6px 0 0;color:var(--muted);font-size:14px}
+
+  form{padding:24px 28px 28px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .full{grid-column:1/-1}
+  .sec{grid-column:1/-1;margin-top:6px;padding-top:16px;border-top:1px solid var(--line)}
+  .sec h3{margin:0 0 2px;font-size:14px;font-weight:700}
+  .sec p{margin:0;font-size:12px;color:var(--muted)}
+
+  label{display:block;font-size:13px;font-weight:600;margin:0 0 6px}
+  label .opt{font-weight:400;color:var(--muted)}
+  .req{color:var(--accent)}
+  input,select,textarea{width:100%;font:inherit;font-size:16px;line-height:1.4;color:var(--ink);background:var(--surface);
+    border:1px solid var(--line);border-radius:10px;padding:12px;min-height:48px;transition:border-color .15s,box-shadow .15s}
+  textarea{resize:vertical;min-height:80px}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+  input[type=number]{-moz-appearance:textfield}
+  input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+
+  .seg{display:flex;gap:8px}
+  .seg label{flex:1;margin:0}
+  .seg input{position:absolute;opacity:0;width:0;height:0}
+  .seg .pill{display:block;text-align:center;padding:12px;border:1px solid var(--line);
+    border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;transition:all .15s}
+  .seg input:checked + .pill{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+
+  /* Werkzeugliste */
+  .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .toolbar input{flex:1;min-width:180px}
+  .toolbar button{width:auto;flex:none;font:inherit;font-size:13px;font-weight:600;padding:10px 12px;min-height:44px;
+    border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);cursor:pointer}
+  .toolbar button:hover{border-color:var(--accent);color:var(--accent)}
+  .counter{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;
+    background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line));
+    border-radius:12px;padding:12px 16px;margin-bottom:12px;font-size:14px}
+  .counter b{font-size:18px}
+
+  .grp{margin:16px 0 8px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+  .item{display:flex;align-items:center;gap:12px;padding:9px 12px;border:1px solid var(--line);
+    border-radius:10px;margin-bottom:6px;background:var(--surface);transition:border-color .15s,background .15s}
+  .item.on{border-color:var(--accent);background:var(--accent-soft)}
+  .item.hide{display:none}
+  .item .nm{flex:1;font-size:14px;line-height:1.35}
+  .item .qty{width:62px;flex:none;min-height:40px;padding:8px;text-align:center;font-size:15px}
+  .chk{flex:none;width:24px;height:24px;border:1.5px solid var(--line);border-radius:6px;background:#fff;
+    display:grid;place-items:center;cursor:pointer;padding:0;min-height:0}
+  .item.on .chk{background:var(--accent);border-color:var(--accent)}
+  .chk svg{opacity:0;stroke:#fff}
+  .item.on .chk svg{opacity:1}
+
+  .sigbox{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+  .sigbox canvas{display:block;width:100%;height:170px;touch-action:none;-webkit-user-select:none;user-select:none;
+    -webkit-touch-callout:none;cursor:crosshair;
+    background:repeating-linear-gradient(transparent,transparent 168px,var(--line) 169px)}
+  .sigbar{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--line);background:#fafbfc}
+  .sigbar span{font-size:12px;color:var(--muted)}
+  .sigbar button{background:none;border:0;color:var(--danger);font:inherit;font-weight:600;font-size:12px;cursor:pointer;padding:4px 6px;min-height:0;width:auto}
+
+  .submit{width:100%;font:inherit;font-weight:600;font-size:15px;color:#fff;background:var(--accent);
+    border:0;border-radius:11px;padding:14px 16px;cursor:pointer;margin-top:22px}
+  .submit:hover{filter:brightness(.94)}
+  .submit:disabled{opacity:.6;cursor:not-allowed}
+  .msg{border-radius:11px;padding:13px 15px;font-size:14px;margin-top:14px;display:none}
+  .msg.show{display:block}
+  .msg.err{background:#fef2f2;color:var(--danger);border:1px solid #fecaca}
+
+  .done{display:none;padding:44px 28px;text-align:center}
+  .done.show{display:block}
+  .done .ico{width:56px;height:56px;border-radius:50%;background:color-mix(in srgb,var(--ok) 14%,transparent);
+    color:var(--ok);display:grid;place-items:center;margin:0 auto 14px}
+  .done h2{margin:0 0 6px;font-size:20px}
+  .done p{margin:0;color:var(--muted);font-size:14px}
+  .done button{margin-top:22px;width:auto;padding:11px 22px;background:transparent;color:var(--accent);
+    border:1px solid var(--line);border-radius:11px;font:inherit;font-weight:600;cursor:pointer}
+  .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:16px}
+
+  @media (max-width:560px){
+    body{padding:18px 12px}
+    .grid{grid-template-columns:1fr;gap:14px}
+    .head{padding:24px 20px 20px}
+    form{padding:20px 16px 30px}
+  }
+  .hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;overflow:hidden}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+
+    <div class="head">
+      <p class="eyebrow">Ausstattung</p>
+      <h1>Werkzeugprotokoll</h1>
+      <p>Ausgabe und Rückgabe dokumentieren – erzeugt ein PDF mit Ausstattungsliste und Unterschriften.</p>
+    </div>
+
+    <form id="form" novalidate>
+      <div class="grid">
+        <div class="hp" aria-hidden="true"><input type="text" id="hp" tabindex="-1" autocomplete="off"></div>
+
+        <div class="full">
+          <label>Art des Vorgangs <span class="req">*</span></label>
+          <div class="seg">
+            <label><input type="radio" name="vorgang" value="Ausgabe" checked><span class="pill">Ausgabe</span></label>
+            <label><input type="radio" name="vorgang" value="Rückgabe"><span class="pill">Rückgabe</span></label>
+          </div>
+        </div>
+
+        <div>
+          <label for="datum">Datum <span class="req">*</span></label>
+          <input type="date" id="datum" required>
+        </div>
+        <div>
+          <label for="mitarbeiter">Mitarbeiter <span class="req">*</span></label>
+          <input type="text" id="mitarbeiter" autocomplete="name" placeholder="Vorname Nachname" required>
+        </div>
+
+        <div class="sec"><h3>Ausstattungsliste</h3><p>Antippen zum Auswählen, Menge bei Bedarf anpassen</p></div>
+
+        <div class="counter">
+          <span>Ausgewählt</span>
+          <span><b id="cntPos">0</b> Positionen · <b id="cntStk">0</b> Stück</span>
+        </div>
+
+        <div class="full">
+          <div class="toolbar">
+            <input type="text" id="suche" placeholder="Werkzeug suchen…">
+            <button type="button" id="alle">Alle</button>
+            <button type="button" id="keine">Keine</button>
+          </div>
+          <div id="liste"></div>
+        </div>
+
+        <div class="sec"><h3>Abschluss</h3><p>Bemerkung, Unterschriften und Versand</p></div>
+
+        <div class="full">
+          <label for="bemerkung">Bemerkung <span class="opt">(optional)</span></label>
+          <textarea id="bemerkung" placeholder="z. B. Akku 2,0ah defekt, Tasche klein fehlt"></textarea>
+        </div>
+
+        <div class="full">
+          <label for="name1">Übergeber (Firma) <span class="req">*</span></label>
+          <input type="text" id="name1" placeholder="Name in Druckbuchstaben" style="margin-bottom:8px" required>
+          <div class="sigbox">
+            <canvas id="sig1"></canvas>
+            <div class="sigbar"><span>Unterschrift Übergeber</span><button type="button" onclick="clearSig(1)">Löschen</button></div>
+          </div>
+        </div>
+        <div class="full">
+          <label for="name2">Übernehmer (Mitarbeiter) <span class="req">*</span></label>
+          <input type="text" id="name2" placeholder="Name in Druckbuchstaben" style="margin-bottom:8px" required>
+          <div class="sigbox">
+            <canvas id="sig2"></canvas>
+            <div class="sigbar"><span>Unterschrift Übernehmer</span><button type="button" onclick="clearSig(2)">Löschen</button></div>
+          </div>
+        </div>
+
+        <div class="full">
+          <label for="cc">Kopie zusätzlich an <span class="opt">(optional)</span></label>
+          <input type="email" id="cc" placeholder="z. B. mitarbeiter@firma.de" autocomplete="email">
+          <p class="hint">Leer lassen, wenn nur die Betriebsleitung das Protokoll bekommen soll.</p>
+        </div>
+      </div>
+
+      <button type="submit" class="submit" id="btn">Protokoll erstellen & senden</button>
+      <div class="msg err" id="err"></div>
+    </form>
+
+    <div class="done" id="done">
+      <div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <h2>Protokoll gesendet</h2>
+      <p>Das PDF mit Ausstattungsliste und Unterschriften wurde übermittelt.</p>
+      <button type="button" id="again">Neues Protokoll</button>
+    </div>
+
+  </div>
+  <p class="foot">Angaben werden ausschließlich zur Werkzeugdokumentation verwendet.</p>
+</div>
+
+<script src="jspdf.umd.min.js"></script>
+<script>
+  const $ = id => document.getElementById(id);
+  const fmtDate = d => d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});
+  $("datum").valueAsDate = new Date();
+
+  /* ================= AUSSTATTUNGSLISTE =================
+     Hier Werkzeuge ergänzen/ändern: einfach Zeile hinzufügen.
+     ===================================================== */
+  const KATALOG = [
+    ["Bosch Elektrowerkzeuge", [
+      "Bohrhammer GBH 26F",
+      "Absaugung für GBH 26F",
+      "Akkuschrauber GSR-12V",
+      "Ortungsgerät D-tect 120",
+      "Staubsauger 18V",
+      "Winkelschleifer GWS 18V-7",
+      "Winkelschleifer GWS 12V-76",
+      "Baustellenlampe 18V 1900C",
+      "Entfernungsmesser",
+      "Tasche Groß",
+      "Tasche klein"
+    ]],
+    ["Akkus & Ladegeräte", [
+      "Akku ProCORE 5,5Ah 18V",
+      "Akku ProCORE 4,0Ah 18V",
+      "Akku 5,0Ah 18V",
+      "Akku 2,0Ah 12V",
+      "Ladegerät GAL 1880 CV 18V",
+      "Ladegerät GAL 12V-20"
+    ]],
+    ["Bohrer & Fräsen", [
+      "Bohrer 8x460mm",
+      "Bohrer 10x460mm",
+      "Bohrer 12x460mm",
+      "Bohrer 20x460mm",
+      "Bohrer 10x600mm",
+      "Bohrer 12x600mm",
+      "Bohrer 10x1000mm",
+      "Kegelbohrer",
+      "Lochfräse Stein",
+      "Lochfräse Holz"
+    ]],
+    ["Leitern", [
+      "Ausziehleiter 3,8m o. 3,2m",
+      "5-Stufenleiter 150kg",
+      "3-Stufenleiter 150kg"
+    ]],
+    ["Glasfaser / FTTH", [
+      "Spleißgerät Elfcam AI 9 (mit Cutter u. Ladegerät)",
+      "Kati Blitz 30m",
+      "Kati Blitz Ersatzköpfe-Set",
+      "Abisolierzange FTTH",
+      "10KM FTTH Laser",
+      "Adapter FC zu LC für Laser",
+      "LSA Anlegewerkzeug"
+    ]],
+    ["Messen & Markieren", [
+      "Wasserwaage klein",
+      "Wasserwaage Groß",
+      "Phomemo M120 Etikettendrucker",
+      "Dymo LetraTag LT-100H",
+      "Tieflochmarker",
+      "Maurerschnur"
+    ]],
+    ["Handwerkzeug", [
+      "Zangenset Mannesmann",
+      "Knipex Ausklinkzange",
+      "Kevlarschere Clauss",
+      "Stanley Blechschere",
+      "Stanley Meißel",
+      "Würth Cuttermesser",
+      "Wisnet Schlosserhammer",
+      "Hazet Schraubendreher-Set",
+      "Heißklebepistole Mellif Akku",
+      "Wolfcraft Kartuschenpresse MG 211",
+      "Stanley Kleinteilekoffer"
+    ]],
+    ["Sonstiges", [
+      "Handy",
+      "Kehrschaufel"
+    ]]
+  ];
+
+  /* ---------- Liste aufbauen ---------- */
+  let idx = 0;
+  const items = [];   // {id, gruppe, name, el, qty}
+  const liste = $("liste");
+  KATALOG.forEach(([gruppe, werkzeuge]) => {
+    const h = document.createElement("p"); h.className = "grp"; h.textContent = gruppe;
+    liste.appendChild(h);
+    werkzeuge.forEach(name => {
+      const id = "it" + (idx++);
+      const row = document.createElement("div");
+      row.className = "item"; row.dataset.such = (gruppe + " " + name).toLowerCase();
+      row.innerHTML =
+        `<button type="button" class="chk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+         <span class="nm">${name}</span>
+         <input type="number" class="qty" min="1" step="1" value="1" inputmode="numeric">`;
+      liste.appendChild(row);
+      const obj = {id, gruppe, name, row, qtyEl: row.querySelector(".qty"), on:false};
+      items.push(obj);
+
+      const toggle = () => { obj.on = !obj.on; row.classList.toggle("on", obj.on); zaehle(); };
+      row.querySelector(".chk").addEventListener("click", toggle);
+      row.querySelector(".nm").addEventListener("click", toggle);
+      obj.qtyEl.addEventListener("input", () => {
+        if(!obj.on && obj.qtyEl.value){ obj.on = true; row.classList.add("on"); }
+        zaehle();
+      });
+      obj.qtyEl.addEventListener("click", e => e.stopPropagation());
+    });
+  });
+
+  function zaehle(){
+    const gewaehlt = items.filter(i => i.on);
+    $("cntPos").textContent = gewaehlt.length;
+    $("cntStk").textContent = gewaehlt.reduce((s,i) => s + (parseInt(i.qtyEl.value)||1), 0);
+  }
+  zaehle();
+
+  $("suche").addEventListener("input", e => {
+    const q = e.target.value.trim().toLowerCase();
+    items.forEach(i => i.row.classList.toggle("hide", q && !i.row.dataset.such.includes(q)));
+    document.querySelectorAll(".grp").forEach(h => {
+      let n = h.nextElementSibling, sichtbar = false;
+      while(n && n.classList.contains("item")){ if(!n.classList.contains("hide")) sichtbar = true; n = n.nextElementSibling; }
+      h.style.display = sichtbar ? "" : "none";
+    });
+  });
+  $("alle").addEventListener("click", () => { items.forEach(i => { if(!i.row.classList.contains("hide")){ i.on=true; i.row.classList.add("on"); } }); zaehle(); });
+  $("keine").addEventListener("click", () => { items.forEach(i => { i.on=false; i.row.classList.remove("on"); }); zaehle(); });
+
+  /* ---------- Unterschriften ---------- */
+  const pads = {};
+  function initPad(n){
+    const c = $("sig"+n), ctx = c.getContext("2d");
+    function size(){
+      const r = c.getBoundingClientRect(), dpr = window.devicePixelRatio||1;
+      if(r.width === 0) return false;
+      const w = Math.round(r.width*dpr), h = Math.round(r.height*dpr);
+      if(c.width === w && c.height === h) return true;
+      c.width = w; c.height = h;
+      ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr,dpr);
+      ctx.lineWidth=2.2; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle="#182430";
+      if(pads[n]) pads[n].empty = true;
+      return true;
+    }
+    let drawing=false;
+    const pos = e => { const r=c.getBoundingClientRect(); const p=e.touches?e.touches[0]:e; return {x:p.clientX-r.left,y:p.clientY-r.top}; };
+    const start = e => { e.preventDefault(); size(); drawing=true; pads[n].empty=false; const {x,y}=pos(e); ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+0.1,y); ctx.stroke(); };
+    const move  = e => { if(!drawing) return; e.preventDefault(); const {x,y}=pos(e); ctx.lineTo(x,y); ctx.stroke(); };
+    const end   = () => { drawing=false; };
+    c.addEventListener("mousedown",start); c.addEventListener("mousemove",move); window.addEventListener("mouseup",end);
+    c.addEventListener("touchstart",start,{passive:false}); c.addEventListener("touchmove",move,{passive:false});
+    c.addEventListener("touchend",end); c.addEventListener("touchcancel",end);
+    pads[n] = {canvas:c, ctx, empty:true, size, clear(){ ctx.clearRect(0,0,c.width,c.height); this.empty=true; }};
+    size();
+  }
+  initPad(1); initPad(2);
+  function clearSig(n){ pads[n].clear(); }
+  window.addEventListener("resize", ()=>{ pads[1].size(); pads[2].size(); });
+
+  /* ---------- PDF ---------- */
+  function ladeJsPDF(){
+    if(window.jspdf && window.jspdf.jsPDF) return Promise.resolve();
+    const quellen = ["jspdf.umd.min.js",
+      "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+      "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"];
+    return new Promise((res,rej)=>{ let i=0; (function next(){
+      if(i>=quellen.length) return rej(new Error("PDF-Bibliothek konnte nicht geladen werden"));
+      const s=document.createElement("script"); s.src=quellen[i++];
+      s.onload=()=>(window.jspdf&&window.jspdf.jsPDF)?res():next(); s.onerror=next;
+      document.head.appendChild(s); })(); });
+  }
+
+  function buildPDF(d, gewaehlt){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({unit:"mm", format:"a4"});
+    const M = 16; let y = M;
+
+    doc.setFont("helvetica","bold"); doc.setFontSize(17);
+    doc.text("Werkzeugprotokoll – " + d.vorgang, M, y); y += 7;
+    doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(100);
+    doc.text("Erstellt am " + d.datum, M, y); y += 8;
+    doc.setTextColor(20); doc.setDrawColor(210); doc.line(M,y,194,y); y += 8;
+
+    doc.setFontSize(11);
+    [["Art des Vorgangs",d.vorgang],["Datum",d.datum],["Mitarbeiter",d.mitarbeiter],
+     ["Positionen",d.positionen+" Positionen / "+d.stueck+" Stück"]].forEach(([k,v])=>{
+      doc.setFont("helvetica","bold"); doc.text(k,M,y);
+      doc.setFont("helvetica","normal"); doc.text(String(v),M+50,y); y+=7;
+    });
+
+    y += 4;
+    doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.text("Übergebene Ausstattung", M, y); y += 7;
+
+    let letzteGruppe = "";
+    doc.setFontSize(10);
+    gewaehlt.forEach(i => {
+      if(y > 262){ doc.addPage(); y = M; }
+      if(i.gruppe !== letzteGruppe){
+        y += 2;
+        doc.setFont("helvetica","bold"); doc.setTextColor(90);
+        doc.text(i.gruppe, M, y); doc.setTextColor(20); y += 5.5;
+        letzteGruppe = i.gruppe;
+      }
+      doc.setFont("helvetica","normal");
+      doc.text("•  " + i.name, M+3, y);
+      doc.text(i.menge + "x", 186, y, {align:"right"});
+      y += 5.4;
+    });
+
+    if(d.bemerkung){
+      y += 5; if(y > 250){ doc.addPage(); y = M; }
+      doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.text("Bemerkung", M, y); y += 6;
+      doc.setFont("helvetica","normal"); doc.setFontSize(10);
+      doc.splitTextToSize(d.bemerkung, 178).forEach(l => { doc.text(l, M, y); y += 5; });
+    }
+
+    // Unterschriften
+    y += 8; if(y > 235){ doc.addPage(); y = M; }
+    doc.setDrawColor(210); doc.line(M,y,194,y); y += 8;
+    doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.text("Unterschriften", M, y); y += 4;
+    const sigW=80, sigH=26;
+    const put=(n,label,name,x)=>{
+      doc.addImage(pads[n].canvas.toDataURL("image/png"),"PNG",x,y,sigW,sigH);
+      doc.setDrawColor(150); doc.line(x,y+sigH,x+sigW,y+sigH);
+      doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(90); doc.text(label,x,y+sigH+5);
+      doc.setTextColor(20); doc.setFontSize(10); doc.text(name||"",x,y+sigH+10);
+    };
+    put(1,"Übergeber (Firma)",d.name1,M);
+    put(2,"Übernehmer (Mitarbeiter)",d.name2,M+98);
+
+    return doc.output("blob");
+  }
+
+  /* ---------- Absenden ---------- */
+  $("form").addEventListener("submit", async e=>{
+    e.preventDefault(); $("err").classList.remove("show");
+    for(const id of ["mitarbeiter","name1","name2"])
+      if(!$(id).value.trim()){ $(id).focus(); return showErr("Bitte alle Pflichtfelder (*) ausfüllen."); }
+    const gewaehlt = items.filter(i=>i.on).map(i=>({gruppe:i.gruppe, name:i.name, menge: parseInt(i.qtyEl.value)||1}));
+    if(!gewaehlt.length) return showErr("Bitte mindestens ein Werkzeug auswählen.");
+    if(pads[1].empty) return showErr("Bitte die Unterschrift des Übergebers erfassen.");
+    if(pads[2].empty) return showErr("Bitte die Unterschrift des Übernehmers erfassen.");
+
+    const btn=$("btn"); btn.disabled=true; btn.textContent="Protokoll wird erstellt…";
+    const d = {
+      vorgang: document.querySelector('input[name="vorgang"]:checked').value,
+      datum: fmtDate(new Date($("datum").value)),
+      mitarbeiter: $("mitarbeiter").value,
+      bemerkung: $("bemerkung").value,
+      name1: $("name1").value, name2: $("name2").value,
+      positionen: gewaehlt.length,
+      stueck: gewaehlt.reduce((s,i)=>s+i.menge,0)
+    };
+
+    try{
+      await ladeJsPDF();
+      const pdfBlob = buildPDF(d, gewaehlt);
+      btn.textContent = "Wird gesendet…";
+      const dateiname = "Werkzeugprotokoll_" + d.mitarbeiter.replace(/[^A-Za-z0-9]/g,"") + "_" + $("datum").value + ".pdf";
+
+      const fd = new FormData();
+      Object.entries(d).forEach(([k,v]) => fd.append(k, v));
+      fd.append("liste", gewaehlt.map(i => i.menge + "x  " + i.name + "  (" + i.gruppe + ")").join("\n"));
+      fd.append("cc", $("cc").value); fd.append("website", $("hp").value);
+      fd.append("pdf", pdfBlob, dateiname); fd.append("dateiname", dateiname);
+
+      const r = await fetch("mail.php", {method:"POST", body: fd});
+      if(r.status === 413) return showErr("Der Server hat das Protokoll als zu groß abgelehnt.");
+      let data; try{ data = await r.json(); }
+      catch(_){ return showErr("Server-Antwort unlesbar (Status "+r.status+")."); }
+      data.success ? (($("form").style.display="none"), $("done").classList.add("show"))
+                   : showErr(data.message || "Senden fehlgeschlagen.");
+    }catch(err){ showErr("Fehler beim Erstellen: " + (err && err.message ? err.message : err)); }
+    finally{ btn.disabled=false; btn.textContent="Protokoll erstellen & senden"; }
+  });
+
+  function showErr(m){ const el=$("err"); el.textContent=m; el.classList.add("show"); el.scrollIntoView({behavior:"smooth",block:"center"}); }
+
+  $("again").addEventListener("click", ()=>{
+    $("form").reset(); $("datum").valueAsDate=new Date();
+    items.forEach(i=>{ i.on=false; i.row.classList.remove("on","hide"); i.qtyEl.value=1; });
+    document.querySelectorAll(".grp").forEach(h=>h.style.display="");
+    zaehle(); clearSig(1); clearSig(2);
+    $("done").classList.remove("show"); $("form").style.display="block";
+    window.scrollTo(0,0);
+  });
+</script>
+</body>
+</html>
